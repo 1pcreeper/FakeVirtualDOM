@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creeper</title>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script>
+        class VirtualDOM {
+            static #isRender = false;
+            static #root = null;
+            static createRoot(root) {
+                const rootClass = new VirtualDOM.#Root(root);
+                VirtualDOM.#root = rootClass;
+                return VirtualDOM.#root;
+            }
+            static invokeRender() {
+                VirtualDOM.#isRender = true;
+            }
+            static #Root = class {
+                #rootElement = null;
+                #renderElement = null;
+                constructor(rootElement) {
+                    this.#rootElement = rootElement;
+                }
+                render(renderElement) {
+                    let isFunction = false;
+                    if (typeof renderElement === "function") {
+                        isFunction = true;
+                    } else {
+                        isFunction = false;
+                    }
+                    const refresh = (bool) => {
+                        if (bool) {
+                            this.#rootElement.appendChild(renderElement());
+                        } else {
+                            this.#rootElement.appendChild(renderElement.render());
+                        }
+                    }
+                    refresh(isFunction);
+                    FunctionComponent.increaseCurrentIndex();
+                    setInterval(() => {
+                        if (VirtualDOM.#isRender) {
+                            this.#rootElement.innerHTML = "";
+                            refresh(isFunction);
+                            VirtualDOM.#isRender = false;
+                        }
+                    }, 1);
+                }
+            }
+        }
+        class ClassComponent {
+            props = {};
+            constructor(props) {
+                this.props = props;
+            }
+            setState = (updatedState) => {
+                Object.assign(this.state, updatedState);
+                VirtualDOM.invokeRender();
+            }
+        }
+        class FunctionComponent {
+            static #currentIndex = 0;
+            static #states = [[], []];
+            static useState(value) {
+                const states = FunctionComponent.#states;
+                const currentIndex = FunctionComponent.#currentIndex;
+                const index0 = (currentIndex + 1) % 2;
+                let index1 = 0;
+                if (currentIndex === 0) {
+                    states[index0].push(value);
+                    index1 = states[index0].length - 1;
+                    return [states[index0][index1], FunctionComponent.#getSetStateCallBack(index1)];
+                }
+                states[index0].push("dummy");
+                index1 = states[index0].length - 1;
+                states[index0][index1] = states[(index0 + 1) % 2][index1];
+                return [states[index0][index1], FunctionComponent.#getSetStateCallBack(index1)];
+            }
+            static increaseCurrentIndex() {
+                FunctionComponent.#currentIndex++;
+            }
+            static #getSetStateCallBack(index1) {
+                const setState = (s) => {
+                    FunctionComponent.increaseCurrentIndex();
+                    const states = FunctionComponent.#states;
+                    const currentIndex = FunctionComponent.#currentIndex;
+
+                    const index0 = (currentIndex + 1) % 2; //original
+                    const newIndex0 = (currentIndex) % 2  //new
+                    const newState = [...states[index0]];
+                    newState[index1] = s;
+                    states[newIndex0] = newState;
+                    states[index0] = [];
+
+                    VirtualDOM.invokeRender();
+                    console.log(states);
+                };
+                return setState;
+            }
+        }
+        window.onload = () => {
+            const container = document.getElementById('root');
+            const root = VirtualDOM.createRoot(container);
+            root.render(new App());
+        }
+    </script>
+</body>
+
+</html>

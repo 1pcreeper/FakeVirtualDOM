@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creeper</title>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script>
+        class VirtualDOM {
+            static #isRender = false;
+            static #root = null;
+            static createRoot(root) {
+                const rootClass = new VirtualDOM.#Root(root);
+                VirtualDOM.#root = rootClass;
+                return VirtualDOM.#root;
+            }
+            static invokeRender() {
+                VirtualDOM.#isRender = true;
+            }
+            static #Root = class {
+                #rootElement = null;
+                #renderElement = null;
+                constructor(rootElement) {
+                    this.#rootElement = rootElement;
+                }
+                render(renderElement) {
+                    let isFunction = false;
+                    if (typeof renderElement === "function") {
+                        isFunction = true;
+                    } else {
+                        isFunction = false;
+                    }
+                    const refresh = (bool) => {
+                        if (bool) {
+                            this.#rootElement.appendChild(renderElement());
+                        } else {
+                            this.#rootElement.appendChild(renderElement.render());
+                        }
+                    }
+                    refresh(isFunction);
+                    FunctionComponent.increaseCurrentIndex();
+                    setInterval(() => {
+                        if (VirtualDOM.#isRender) {
+                            this.#rootElement.innerHTML = "";
+                            refresh(isFunction);
+                            VirtualDOM.#isRender = false;
+                        }
+                    }, 1);
+                }
+            }
+        }
+        class ClassComponent {
+            props = {};
+            constructor(props) {
+                this.props = props;
+            }
+            setState = (updatedState) => {
+                Object.assign(this.state, updatedState);
+                VirtualDOM.invokeRender();
+            }
+        }
+        class FunctionComponent {
+            static #currentIndex = 0;
+            static #states = [[], []];
+            static useState(value) {
+                const states = FunctionComponent.#states;
+                const currentIndex = FunctionComponent.#currentIndex;
+                const index0 = (currentIndex + 1) % 2;
+                let index1 = 0;
+                if (currentIndex === 0) {
+                    states[index0].push(value);
+                    index1 = states[index0].length - 1;
+                    return [states[index0][index1], FunctionComponent.#getSetStateCallBack(index1)];
+                }
+                states[index0].push("dummy");
+                index1 = states[index0].length - 1;
+                states[index0][index1] = states[(index0 + 1) % 2][index1];
+                return [states[index0][index1], FunctionComponent.#getSetStateCallBack(index1)];
+            }
+            static increaseCurrentIndex() {
+                FunctionComponent.#currentIndex++;
+            }
+            static #getSetStateCallBack(index1) {
+                const setState = (s) => {
+                    FunctionComponent.increaseCurrentIndex();
+                    const states = FunctionComponent.#states;
+                    const currentIndex = FunctionComponent.#currentIndex;
+
+                    const index0 = (currentIndex + 1) % 2; //original
+                    const newIndex0 = (currentIndex) % 2  //new
+                    const newState = [...states[index0]];
+                    newState[index1] = s;
+                    states[newIndex0] = newState;
+                    states[index0] = [];
+
+                    VirtualDOM.invokeRender();
+                    console.log(states);
+                };
+                return setState;
+            }
+        }
+        class App extends ClassComponent {
+            state = {
+                card1Title: "Num A",
+                card1Content: 0,
+                card2Title: "Num B",
+                card2Content: 0,
+                answer: 0
+            }
+            props = {};
+            constructor(props) {
+                super(props);
+                this.props = props;
+            }
+            calculateAnswer = () => {
+                const sum = this.state.card1Content + this.state.card2Content;
+                this.setState({ answer: sum });
+            }
+            card1OnNumberChangeHandler = (num) => {
+                this.setState({ card1Content: parseInt(num) });
+                this.calculateAnswer();
+            }
+            card2OnNumberChangeHandler = (num) => {
+                this.setState({ card2Content: parseInt(num) });
+                this.calculateAnswer();
+            }
+            render() {
+                let outerDiv = document.createElement("div");
+                let section = document.createElement("section");
+                let article = document.createElement("article");
+                let symbolDiv = document.createElement("div");
+                let symbol = document.createElement("p");
+                let equalDiv = document.createElement("div");
+                let equal = document.createElement("p");
+                let answerDiv = document.createElement("div");
+                let answer = document.createElement("p");
+                let h1 = document.createElement("h1");
+                h1.innerText = "This is a simulation of React VirtualDOM";
+                let card1 = new Card({
+                    title: this.state.card1Title,
+                    content: this.state.card1Content,
+                    onNumberChange: this.card1OnNumberChangeHandler
+                });
+                let card2 = new Card({
+                    title: this.state.card2Title,
+                    content: this.state.card2Content,
+                    onNumberChange: this.card2OnNumberChangeHandler
+                });
+                symbol.innerText = "+";
+                symbol.style.fontSize = "35px";
+                symbolDiv.style.alignContent = "center";
+                equal.innerText = "=";
+                equal.style.fontSize = "35px";
+                equalDiv.style.alignContent = "center";
+                answer.innerText = this.state.answer;
+                answer.style.fontSize = "35px";
+                if (this.state.answer > 0) {
+                    answer.style.color = "green";
+                }
+                if (this.state.answer < 0) {
+                    answer.style.color = "red";
+                }
+                answerDiv.style.alignContent = "center";
+                article.style.display = "flex";
+                article.style.gap = "20px";
+                equalDiv.appendChild(equal);
+                answerDiv.appendChild(answer);
+                symbolDiv.appendChild(symbol);
+                section.appendChild(h1);
+                article.appendChild(card1.render());
+                article.appendChild(symbolDiv);
+                article.appendChild(card2.render());
+                article.appendChild(equalDiv);
+                article.appendChild(answerDiv);
+                outerDiv.appendChild(section);
+                outerDiv.appendChild(article);
+                return outerDiv;
+            }
+        }
+        class Card extends ClassComponent {
+            state = {};
+            props = {};
+            constructor(props) {
+                super(props);
+                this.props = props;
+            }
+            changeHandler = (e) => {
+                this.props.onNumberChange(e.target.value);
+            }
+            render() {
+                let div = document.createElement("div");
+                let title = document.createElement("h2");
+                let content = document.createElement("p");
+                let numberBox = document.createElement("input");
+                div.style.border = "3px solid blue";
+                div.style.width = "fit-content";
+                div.style.display = "flex";
+                div.style.flexDirection = "column";
+                numberBox.setAttribute("type", "number");
+                numberBox.style.fontSize = "20px";
+                numberBox.addEventListener("change", this.changeHandler);
+                numberBox.value = this.props.content;
+                title.style.textAlign = "center";
+                title.innerText = this.props.title;
+                content.innerText = this.props.content;
+                content.style.textAlign = "center";
+                content.style.fontSize = "35px";
+                if (this.props.content > 0) {
+                    content.style.color = "green";
+                }
+                if (this.props.content < 0) {
+                    content.style.color = "red";
+                }
+                div.appendChild(title);
+                div.appendChild(content);
+                div.appendChild(numberBox);
+                return div;
+            }
+        }
+        window.onload = () => {
+            const container = document.getElementById('root');
+            const root = VirtualDOM.createRoot(container);
+            root.render(new App());
+        }
+    </script>
+</body>
+
+</html>
