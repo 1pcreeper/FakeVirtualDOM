@@ -55,9 +55,9 @@
             }
         }
         class ClassComponent {
-            props = {};
+            #props = {};
             constructor(props) {
-                this.props = props;
+                this.#props = props;
             }
             setState = (updatedState) => {
                 Object.assign(this.state, updatedState);
@@ -67,6 +67,9 @@
         class FunctionComponent {
             static #currentIndex = 0;
             static #states = [[], []];
+            static increaseCurrentIndex() {
+                FunctionComponent.#currentIndex++;
+            }
             static useState(value) {
                 const states = FunctionComponent.#states;
                 const currentIndex = FunctionComponent.#currentIndex;
@@ -82,9 +85,7 @@
                 states[index0][index1] = states[(index0 + 1) % 2][index1];
                 return [states[index0][index1], FunctionComponent.#getSetStateCallBack(index1)];
             }
-            static increaseCurrentIndex() {
-                FunctionComponent.#currentIndex++;
-            }
+            
             static #getSetStateCallBack(index1) {
                 const setState = (s) => {
                     FunctionComponent.increaseCurrentIndex();
@@ -104,10 +105,15 @@
                 return setState;
             }
         }
+        function App() {
+            const helloWorld = document.createElement("h1");
+            helloWorld.innerText = "Hello World";
+            return helloWorld;
+        }
         window.onload = () => {
             const container = document.getElementById('root');
             const root = VirtualDOM.createRoot(container);
-            root.render(new App());
+            root.render(App);
         }
     </script>
 </body>
