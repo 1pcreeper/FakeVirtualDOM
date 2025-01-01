@@ -36,17 +36,18 @@
                         isFunction = false;
                     }
                     const refresh = (bool) => {
+                        this.#rootElement.innerHTML = "";
                         if (bool) {
                             this.#rootElement.appendChild(renderElement());
                         } else {
                             this.#rootElement.appendChild(renderElement.render());
                         }
+                        FunctionComponent.invokeEffects();
                     }
                     refresh(isFunction);
-                    FunctionComponent.increaseCurrentIndex();
+                    FunctionComponent.increaseStatesIndex();
                     setInterval(() => {
                         if (VirtualDOM.#isRender) {
-                            this.#rootElement.innerHTML = "";
                             refresh(isFunction);
                             VirtualDOM.#isRender = false;
                         }
@@ -62,20 +63,21 @@
             setState = (updatedState) => {
                 Object.assign(this.state, updatedState);
                 VirtualDOM.invokeRender();
+                FunctionComponent.invokeEffect();
             }
         }
         class FunctionComponent {
-            static #currentIndex = 0;
             static #states = [[], []];
-            static increaseCurrentIndex() {
-                FunctionComponent.#currentIndex++;
-            }
+            static #effects = [];
+            static #pendingEffects = [];
+            static #effectsIndex = 0;
+            static #statesIndex = 0;
             static useState(value) {
                 const states = FunctionComponent.#states;
-                const currentIndex = FunctionComponent.#currentIndex;
-                const index0 = (currentIndex + 1) % 2;
+                const statesIndex = FunctionComponent.#statesIndex;
+                const index0 = (statesIndex + 1) % 2;
                 let index1 = 0;
-                if (currentIndex === 0) {
+                if (statesIndex === 0) {
                     states[index0].push(value);
                     index1 = states[index0].length - 1;
                     return [states[index0][index1], FunctionComponent.#getSetStateCallBack(index1)];
@@ -85,15 +87,51 @@
                 states[index0][index1] = states[(index0 + 1) % 2][index1];
                 return [states[index0][index1], FunctionComponent.#getSetStateCallBack(index1)];
             }
-            
+            static useEffect(callback, targetStates) {
+                const effects = FunctionComponent.#effects;
+                const pendingEffects = FunctionComponent.#pendingEffects;
+                const effectsIndex = FunctionComponent.#effectsIndex;
+                if (arguments.length < 2) {
+                    pendingEffects.push(callback);
+                    return;
+                }
+                if (targetStates.length === 0 && effectsIndex === 0) {
+                    pendingEffects.push(callback);
+                    return;
+                }
+                if (effectsIndex >= effects.length) {
+                    effects.push(targetStates);
+                    FunctionComponent.#effectsIndex++;
+                    return;
+                }
+                const originalValue = JSON.stringify(effects[effectsIndex]);
+                const latestValue = JSON.stringify(targetStates);
+                if (originalValue === latestValue) {
+                    FunctionComponent.#effectsIndex++;
+                    return;
+                }
+                effects[effectsIndex] = targetStates
+                pendingEffects.push(callback);
+                FunctionComponent.#effectsIndex++;
+            }
+            static increaseStatesIndex() {
+                FunctionComponent.#statesIndex++;
+            }
+            static invokeEffects() {
+                for (let i of FunctionComponent.#pendingEffects) {
+                    i();
+                }
+                FunctionComponent.#pendingEffects = [];
+                FunctionComponent.#effectsIndex = 0;
+            }
             static #getSetStateCallBack(index1) {
                 const setState = (s) => {
-                    FunctionComponent.increaseCurrentIndex();
+                    FunctionComponent.increaseStatesIndex();
                     const states = FunctionComponent.#states;
-                    const currentIndex = FunctionComponent.#currentIndex;
+                    const statesIndex = FunctionComponent.#statesIndex;
 
-                    const index0 = (currentIndex + 1) % 2; //original
-                    const newIndex0 = (currentIndex) % 2  //new
+                    const index0 = (statesIndex + 1) % 2; //original
+                    const newIndex0 = (statesIndex) % 2  //new
                     const newState = [...states[index0]];
                     newState[index1] = s;
                     states[newIndex0] = newState;
@@ -106,9 +144,21 @@
             }
         }
         function App() {
-            const helloWorld = document.createElement("h1");
-            helloWorld.innerText = "Hello World";
-            return helloWorld;
+            const [title, setTitle] = FunctionComponent.useState(1);
+
+            FunctionComponent.useEffect(() => {
+                console.log(title, "changed");
+            }, [title]);
+
+            const div = document.createElement("h1");
+            const button = document.createElement("button");
+            div.innerText = title;
+            button.innerText = "Click";
+            button.addEventListener("click", (e) => {
+                setTitle(title + 1);
+            });
+            div.appendChild(button);
+            return div;
         }
         window.onload = () => {
             const container = document.getElementById('root');
