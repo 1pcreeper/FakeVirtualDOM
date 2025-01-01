@@ -42,10 +42,9 @@
                         } else {
                             this.#rootElement.appendChild(renderElement.render());
                         }
-                        FunctionComponent.invokeEffects();
+                        FunctionComponent.invokeHooks();
                     }
                     refresh(isFunction);
-                    FunctionComponent.increaseStatesIndex();
                     setInterval(() => {
                         if (VirtualDOM.#isRender) {
                             refresh(isFunction);
@@ -67,35 +66,40 @@
             }
         }
         class FunctionComponent {
-            static #states = [[], []];
+            static #states = [];
             static #effects = [];
             static #pendingEffects = [];
             static #effectsIndex = 0;
-            static #statesIndex = 0;
+            static #statesIndex = -1;
+            static #isMounted = false;
             static useState(value) {
+                FunctionComponent.#statesIndex++;
                 const states = FunctionComponent.#states;
                 const statesIndex = FunctionComponent.#statesIndex;
-                const index0 = (statesIndex + 1) % 2;
-                let index1 = 0;
-                if (statesIndex === 0) {
-                    states[index0].push(value);
-                    index1 = states[index0].length - 1;
-                    return [states[index0][index1], FunctionComponent.#getSetStateCallBack(index1)];
+                const isMounted = FunctionComponent.#isMounted;
+
+                const setState = (v) => {
+                    states[statesIndex] = v;
+                    VirtualDOM.invokeRender();
                 }
-                states[index0].push("dummy");
-                index1 = states[index0].length - 1;
-                states[index0][index1] = states[(index0 + 1) % 2][index1];
-                return [states[index0][index1], FunctionComponent.#getSetStateCallBack(index1)];
+
+                if (!isMounted) {
+                    states.push(value);
+                    return [value, setState];
+                }
+                console.log(states);
+                return [states[statesIndex], setState];
             }
             static useEffect(callback, targetStates) {
                 const effects = FunctionComponent.#effects;
                 const pendingEffects = FunctionComponent.#pendingEffects;
                 const effectsIndex = FunctionComponent.#effectsIndex;
+                const isMounted = FunctionComponent.#isMounted;
                 if (arguments.length < 2) {
                     pendingEffects.push(callback);
                     return;
                 }
-                if (targetStates.length === 0 && effectsIndex === 0) {
+                if (targetStates.length === 0 && !isMounted) {
                     pendingEffects.push(callback);
                     return;
                 }
@@ -114,37 +118,19 @@
                 pendingEffects.push(callback);
                 FunctionComponent.#effectsIndex++;
             }
-            static increaseStatesIndex() {
-                FunctionComponent.#statesIndex++;
-            }
-            static invokeEffects() {
+            static invokeHooks() {
                 for (let i of FunctionComponent.#pendingEffects) {
                     i();
                 }
-                FunctionComponent.#pendingEffects = [];
+                FunctionComponent.#isMounted = true;
+                FunctionComponent.#statesIndex = -1;
                 FunctionComponent.#effectsIndex = 0;
-            }
-            static #getSetStateCallBack(index1) {
-                const setState = (s) => {
-                    FunctionComponent.increaseStatesIndex();
-                    const states = FunctionComponent.#states;
-                    const statesIndex = FunctionComponent.#statesIndex;
+                FunctionComponent.#pendingEffects = [];
 
-                    const index0 = (statesIndex + 1) % 2; //original
-                    const newIndex0 = (statesIndex) % 2  //new
-                    const newState = [...states[index0]];
-                    newState[index1] = s;
-                    states[newIndex0] = newState;
-                    states[index0] = [];
-
-                    VirtualDOM.invokeRender();
-                    console.log(states);
-                };
-                return setState;
             }
         }
         function App() {
-            const [title, setTitle] = FunctionComponent.useState(1);
+            const [title, setTitle] = FunctionComponent.useState(0);
 
             FunctionComponent.useEffect(() => {
                 console.log(title, "changed");
