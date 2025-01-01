@@ -1,5 +1,5 @@
 class FakeVirtualDOM {
-    static #isRender = false;
+    static #renderBuffer = 0;
     static #root = null;
     static createRoot(root) {
         const rootClass = new FakeVirtualDOM.#Root(root);
@@ -7,7 +7,7 @@ class FakeVirtualDOM {
         return FakeVirtualDOM.#root;
     }
     static #invokeRender() {
-        FakeVirtualDOM.#isRender = true;
+        FakeVirtualDOM.#renderBuffer++;
     }
     static #Root = class {
         #rootElement = null;
@@ -33,9 +33,9 @@ class FakeVirtualDOM {
             }
             refresh(isFunction);
             setInterval(() => {
-                if (FakeVirtualDOM.#isRender) {
+                if (FakeVirtualDOM.#renderBuffer > 0) {
                     refresh(isFunction);
-                    FakeVirtualDOM.#isRender = false;
+                    FakeVirtualDOM.#renderBuffer--;
                 }
             }, 1);
         }
@@ -85,7 +85,6 @@ class FakeVirtualDOM {
             }
             if (targetStates.length === 0 && !isMounted) {
                 pendingEffects.push(callback);
-                console.log("ll", FakeVirtualDOM.FunctionComponent.#states)
                 return;
             }
             if (effectsIndex >= effects.length) {
