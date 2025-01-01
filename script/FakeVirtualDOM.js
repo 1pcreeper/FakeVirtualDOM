@@ -85,6 +85,7 @@ class FakeVirtualDOM {
             }
             if (targetStates.length === 0 && !isMounted) {
                 pendingEffects.push(callback);
+                console.log("ll", FakeVirtualDOM.FunctionComponent.#states)
                 return;
             }
             if (effectsIndex >= effects.length) {
