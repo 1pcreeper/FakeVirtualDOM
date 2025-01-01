@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creeper</title>
+</head>
+
+<body>
+    <div id="root"></div>
+    <script src="./script/FakeVirtualDOM.js"></script>
+    <script>
+        class App extends FakeVirtualDOM.ClassComponent {
+            state = {
+                card1Title: "Counter 1",
+                card1Content: 0,
+                card2Title: "Counter 2",
+                card2Content: 0
+            }
+            props = {};
+            constructor(props) {
+                super(props);
+                this.props = props;
+            }
+            card1OnIncrementHandler = (num) => {
+                this.setState({ card1Content: this.state.card1Content + num });
+            }
+            card2OnIncrementHandler = (num) => {
+                this.setState({ card2Content: this.state.card2Content + num });
+            }
+            render() {
+                let outerDiv = document.createElement("div");
+                let section = document.createElement("section");
+                let article = document.createElement("article");
+                let h1 = document.createElement("h1");
+                h1.innerText = "This is a simulation of React VirtualDOM";
+                let card1 = new Card({
+                    title: this.state.card1Title,
+                    content: this.state.card1Content,
+                    onIncrement: this.card1OnIncrementHandler,
+                    numX: 1
+                });
+                let card2 = new Card({
+                    title: this.state.card2Title,
+                    content: this.state.card2Content,
+                    onIncrement: this.card2OnIncrementHandler,
+                    numX: 2
+                });
+                article.style.display = "flex";
+                article.style.gap = "20px";
+                section.appendChild(h1);
+                article.appendChild(card1.render());
+                article.appendChild(card2.render());
+                outerDiv.appendChild(section);
+                outerDiv.appendChild(article);
+                return outerDiv;
+            }
+        }
+        class Card extends FakeVirtualDOM.ClassComponent {
+            state = {};
+            props = {
+                title: "",
+                content: "",
+                onIncrement: null,
+                numX: -1
+            };
+            constructor(props) {
+                super(props);
+                this.props = props;
+            }
+            clickHandler = (e) => {
+                this.props.onIncrement(this.props.numX);
+            }
+            render() {
+                let div = document.createElement("div");
+                let title = document.createElement("h2");
+                let content = document.createElement("p");
+                let button = document.createElement("button");
+                div.style.border = "3px solid blue";
+                div.style.width = "fit-content";
+                div.style.display = "flex";
+                div.style.flexDirection = "column";
+                button.addEventListener("click", this.clickHandler);
+                title.innerText = this.props.title;
+                content.innerText = this.props.content;
+                content.style.textAlign = "center";
+                button.innerText = "Click";
+                div.appendChild(title);
+                div.appendChild(content);
+                div.appendChild(button);
+                return div;
+            }
+        }
+        window.onload = () => {
+            const container = document.getElementById('root');
+            const root = FakeVirtualDOM.createRoot(container);
+            root.render(new App());
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Creeper</title>
+</head>
+
+<body>
+    <div id="root"></div>
+    <script src="./script/FakeVirtualDOM.js"></script>
+    <script>
+        function App() {
+            const [card1Title, setCard1Title] = FakeVirtualDOM.FunctionComponent.useState("Num A");
+            const [card1Content, setCard1Content] = FakeVirtualDOM.FunctionComponent.useState(0);
+            const [card2Title, setCard2Title] = FakeVirtualDOM.FunctionComponent.useState("Num B");
+            const [card2Content, setCard2Content] = FakeVirtualDOM.FunctionComponent.useState(0);
+            const [answer, setAnswer] = FakeVirtualDOM.FunctionComponent.useState(0);
+
+            FakeVirtualDOM.FunctionComponent.useEffect(() => {
+                const sum = card1Content + card2Content;
+                setAnswer(sum);
+            }, [card1Content, card2Content])
+
+            const card1OnNumberChangeHandler = (num) => {
+                console.log(num)
+                setCard1Content(parseInt(num));
+            }
+            const card2OnNumberChangeHandler = (num) => {
+                setCard2Content(parseInt(num));
+            }
+            const outerDiv = document.createElement("div");
+            const section = document.createElement("section");
+            const article = document.createElement("article");
+            const symbolDiv = document.createElement("div");
+            const symbol = document.createElement("p");
+            const equalDiv = document.createElement("div");
+            const equal = document.createElement("p");
+            const answerDiv = document.createElement("div");
+            const answerValue = document.createElement("p");
+            const h1 = document.createElement("h1");
+            h1.innerText = "This is a simulation of React VirtualDOM";
+            const card1 = Card({
+                title: card1Title,
+                content: card1Content,
+                onNumberChange: card1OnNumberChangeHandler
+            });
+            const card2 = Card({
+                title: card2Title,
+                content: card2Content,
+                onNumberChange: card2OnNumberChangeHandler
+            });
+            symbol.innerText = "+";
+            symbol.style.fontSize = "35px";
+            symbolDiv.style.alignContent = "center";
+            equal.innerText = "=";
+            equal.style.fontSize = "35px";
+            equalDiv.style.alignContent = "center";
+            answerValue.innerText = answer;
+            answerValue.style.fontSize = "35px";
+            if (answer > 0) {
+                answerValue.style.color = "green";
+            }
+            if (answer < 0) {
+                answerValue.style.color = "red";
+            }
+            answerDiv.style.alignContent = "center";
+            article.style.display = "flex";
+            article.style.gap = "20px";
+            equalDiv.appendChild(equal);
+            answerDiv.appendChild(answerValue);
+            symbolDiv.appendChild(symbol);
+            section.appendChild(h1);
+            article.appendChild(card1);
+            article.appendChild(symbolDiv);
+            article.appendChild(card2);
+            article.appendChild(equalDiv);
+            article.appendChild(answerDiv);
+            outerDiv.appendChild(section);
+            outerDiv.appendChild(article);
+            return outerDiv;
+
+        }
+        function Card({ title, content, onNumberChange }) {
+            const changeHandler = (e) => {
+                onNumberChange(e.target.value);
+            }
+
+            const divElement = document.createElement("div");
+            const titleElement = document.createElement("h2");
+            const contentElement = document.createElement("p");
+            const numberBoxElement = document.createElement("input");
+            divElement.style.border = "3px solid blue";
+            divElement.style.width = "fit-content";
+            divElement.style.display = "flex";
+            divElement.style.flexDirection = "column";
+            numberBoxElement.setAttribute("type", "number");
+            numberBoxElement.style.fontSize = "20px";
+            numberBoxElement.addEventListener("change", changeHandler);
+            numberBoxElement.value = content;
+            titleElement.style.textAlign = "center";
+            titleElement.innerText = title;
+            contentElement.innerText = content;
+            contentElement.style.textAlign = "center";
+            contentElement.style.fontSize = "35px";
+            if (content > 0) {
+                contentElement.style.color = "green";
+            }
+            if (content < 0) {
+                contentElemment.style.color = "red";
+            }
+            divElement.appendChild(titleElement);
+            divElement.appendChild(contentElement);
+            divElement.appendChild(numberBoxElement);
+            return divElement;
+
+        }
+        window.onload = () => {
+            const container = document.getElementById('root');
+            const root = FakeVirtualDOM.createRoot(container);
+            root.render(App);
+        }
+    </script>
+</body>
+
+</html>
