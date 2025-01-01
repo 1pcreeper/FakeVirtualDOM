@@ -45,7 +45,7 @@ class FakeVirtualDOM {
         constructor(props) {
             this.#props = props;
         }
-        setState = (updatedState) => {
+        setState(updatedState) {
             Object.assign(this.state, updatedState);
             FakeVirtualDOM.#invokeRender();
         }
@@ -72,7 +72,6 @@ class FakeVirtualDOM {
                 states.push(value);
                 return [value, setState];
             }
-            console.log(states);
             return [states[statesIndex], setState];
         }
         static useEffect(callback, targetStates) {
