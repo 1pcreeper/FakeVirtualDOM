@@ -11,7 +11,6 @@ class FakeVirtualDOM {
     }
     static #Root = class {
         #rootElement = null;
-        #renderElement = null;
         constructor(rootElement) {
             this.#rootElement = rootElement;
         }
